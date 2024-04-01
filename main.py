@@ -26,7 +26,7 @@ MQTT_TOPIC_INTERVAL = "phyto_box/interval"
 MQTT_TOPIC_UPDATE = "phyto_box/update"  # New topic for individual mixing requests
 
 # Define the maximum allowed duration for the stirrer
-MAX_STIRRER_DURATION = 10  # 2 minutes in seconds
+MAX_STIRRER_DURATION = 60  # 2 minutes in seconds
 
 # Define the default time interval for stirrer operation
 DEFAULT_STIRRER_OPERATION_INTERVAL = 5 # * 60 * 60  3 hours in seconds move the #
@@ -362,8 +362,7 @@ _thread.start_new_thread(mqtt_thread, ())
 
 # Main loop to control stirrers
 try:
-    print("Local time before synchronization：%s" %str(time.localtime()))
-  #make sure to have internet connection
+
     #ntptime.settime()
     print("Local time after synchronization：%s" %str(time.localtime()))
     while True:       
