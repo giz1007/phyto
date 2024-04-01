@@ -13,7 +13,8 @@ import ntptime
 #if needed, overwrite default time server
 ntptime.host = "0.uk.pool.ntp.org"
 
-firmware_url = "https://raw.githubusercontent.com/giz1007/phytoplankton-stirrer/main/"
+
+firmware_url = "https://raw.githubusercontent.com/giz1007/phyto/main/"
 
 # MQTT Configuration
 MQTT_BROKER = '192.168.10.52'
@@ -22,7 +23,7 @@ MQTT_TOPIC_DURATION = "phyto_box/duration"
 MQTT_TOPIC_LOGS = "phyto_box/logs"
 MQTT_TOPIC_SPEED = "phyto_box/speed"
 MQTT_TOPIC_INTERVAL = "phyto_box/interval"
-MQTT_TOPIC_MIX = "phyto_box/accelerate"  # New topic for individual mixing requests
+MQTT_TOPIC_UPDATE = "phyto_box/update"  # New topic for individual mixing requests
 
 # Define the maximum allowed duration for the stirrer
 MAX_STIRRER_DURATION = 10  # 2 minutes in seconds
@@ -284,6 +285,14 @@ def mqtt_callback(topic, msg):
             log_message = f"Updated duration to {duration} seconds."
             #publish_log(log_message)
             print(log_message)  # Debugging
+        
+        elif topic.endswith(b"/update"):
+            log_message = f"updatemain_request_received."
+            publish_log(log_message)
+            print(log_message)  # Debugging
+            ota_updater = OTAUpdater(SSID, PASSWORD, firmware_url, "main.py")
+            ota_updater.download_and_install_update_if_available()
+
 
         else:
             stirrer_name, parameter = topic.split(b"/")[1:]  # Extract stirrer name and parameter
@@ -339,7 +348,7 @@ print("Connected to MQTT broker")
 mqtt_client.subscribe(b"{}/#".format(MQTT_TOPIC_DURATION))
 mqtt_client.subscribe(b"{}/#".format(MQTT_TOPIC_SPEED))
 mqtt_client.subscribe(b"{}/#".format(MQTT_TOPIC_INTERVAL))
-mqtt_client.subscribe(b"{}/#".format(MQTT_TOPIC_MIX)) 
+mqtt_client.subscribe(b"{}/#".format(MQTT_TOPIC_UPDATE)) 
 
 # Main loop to handle MQTT messages and stirrer control
 # Define a function to be run in a thread for handling MQTT messages
@@ -350,9 +359,6 @@ def mqtt_thread():
 
 # Start the MQTT thread
 _thread.start_new_thread(mqtt_thread, ())
-
-ota_updater = OTAUpdater(SSID, PASSWORD, firmware_url, "test.py")
-ota_updater.download_and_install_update_if_available()
 
 # Main loop to control stirrers
 try:
