@@ -26,10 +26,10 @@ MQTT_TOPIC_INTERVAL = "phyto_box/interval"
 MQTT_TOPIC_UPDATE = "phyto_box/update"  # New topic for individual mixing requests
 
 # Define the maximum allowed duration for the stirrer
-MAX_STIRRER_DURATION = 60  # 2 minutes in seconds
+MAX_STIRRER_DURATION = 10  # 2 minutes in seconds
 
 # Define the default time interval for stirrer operation
-DEFAULT_STIRRER_OPERATION_INTERVAL = 5 # * 60 * 60  3 hours in seconds move the #
+DEFAULT_STIRRER_OPERATION_INTERVAL = 20 # * 60 * 60  3 hours in seconds move the #
 current_interval = DEFAULT_STIRRER_OPERATION_INTERVAL
 
 # Define the list of stirrer names
@@ -55,6 +55,22 @@ STIRRER_SPEEDS = {
 
 # Global variables for dynamic configuration
 stirrer_operation_intervals = {stirrer_name: DEFAULT_STIRRER_OPERATION_INTERVAL for stirrer_name in STIRRER_NAMES}
+
+
+#read and write a request to update the main file from the system.
+def read_update():
+    try:
+        with open(f"update.txt", "r") as file:
+            return int(file.read())
+    except OSError:
+        return None  # Return None if file doesn't exist
+
+def write_update(update):
+    try:
+        with open(f"update.txt", "w") as file:
+            file.write(str(update))
+    except OSError:
+        print(f"Failed to write speed for {stirrer_name} to file.")
 
 # Function to read stirrer interval from file
 def read_stirrer_interval():
@@ -288,11 +304,10 @@ def mqtt_callback(topic, msg):
         
         elif topic.endswith(b"/update"):
             log_message = f"updatemain_request_received."
-            publish_log(log_message)
+            # the update here is 1 
+            interval = int(msg.decode('utf-8'))
             print(log_message)  # Debugging
-            ota_updater = OTAUpdater(SSID, PASSWORD, firmware_url, "main.py")
-            ota_updater.download_and_install_update_if_available()
-
+            write_update(interval)
 
         else:
             stirrer_name, parameter = topic.split(b"/")[1:]  # Extract stirrer name and parameter
@@ -365,10 +380,16 @@ try:
 
     #ntptime.settime()
     print("Local time after synchronization：%s" %str(time.localtime()))
-    while True:       
+    while True:           
         control_stirrers()
         time.sleep(1)
-        #print("repeating main loop")
+        update_triggered = read_update()
+        print({update_triggered})
+        if update_triggered == 1:
+            ota_updater = OTAUpdater(SSID, PASSWORD, firmware_url, "main.py")
+            ota_updater.download_and_install_update_if_available()
+            write_update("0")
+        
 except Exception as e:
     # "should" never get here.  
     # Save exception to a file and force a hard reset
