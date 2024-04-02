@@ -386,9 +386,9 @@ try:
         update_triggered = read_update()
         print({update_triggered})
         if update_triggered == 1:
+            write_update("0")
             ota_updater = OTAUpdater(SSID, PASSWORD, firmware_url, "main.py")
             ota_updater.download_and_install_update_if_available()
-            write_update("0")
         
 except Exception as e:
     # "should" never get here.  
